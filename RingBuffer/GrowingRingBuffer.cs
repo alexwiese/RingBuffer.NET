@@ -21,46 +21,52 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace RingBuffer {
+namespace RingBuffer;
+
+/// <summary>
+/// A generic ring buffer. Grows when capacity is reached.
+/// </summary>
+/// <typeparam name="T">The type of data stored in the buffer</typeparam>
+public class GrowingRingBuffer<T> : RingBuffer<T>
+{
+
+    private int originalCapacity;
+
     /// <summary>
-    /// A generic ring buffer. Grows when capacity is reached.
+    /// Adds an item to the end of the buffer.
     /// </summary>
-    /// <typeparam name="T">The type of data stored in the buffer</typeparam>
-    public class GrowingRingBuffer<T> : RingBuffer<T> {
-
-        private int originalCapacity;
-
-        /// <summary>
-        /// Adds an item to the end of the buffer.
-        /// </summary>
-        /// <param name="item">The item to be added.</param>
-        public new void Put(T item) {
-            // If tail & head are equal and the buffer is not empty, assume
-            // that it would overflow and expand the capacity before adding the
-            // item.
-            if(tail == head && size != 0) {
-                T[] _newArray = new T[buffer.Length + originalCapacity];
-                for(int i = 0; i < Capacity; i++) {
-                    _newArray[i] = buffer[i];
-                }
-                buffer = _newArray;
-                tail = (head + size) % Capacity;
-                addToBuffer(item, false);
+    /// <param name="item">The item to be added.</param>
+    public new void Put(T item)
+    {
+        // If tail & head are equal and the buffer is not empty, assume
+        // that it would overflow and expand the capacity before adding the
+        // item.
+        if (tail == head && size != 0)
+        {
+            var newArray = new T?[buffer.Length + originalCapacity];
+            for (int i = 0; i < Capacity; i++)
+            {
+                newArray[i] = buffer[i];
             }
-            // If the buffer would not overflow, just add the item.
-            else {
-                addToBuffer(item, false);
-            }
+            buffer = newArray;
+            tail = (head + size) % Capacity;
+            AddToBuffer(item, false);
         }
-
-        #region Constructors
-        // Default capacity is 4.
-        public GrowingRingBuffer() : this(4) { }
-        // Capture the starting capacity, for future expansion.
-        public GrowingRingBuffer(int startCapacity)
-            : base(startCapacity) {
-            originalCapacity = startCapacity;
+        // If the buffer would not overflow, just add the item.
+        else
+        {
+            AddToBuffer(item, false);
         }
-        #endregion
     }
+
+    #region Constructors
+    // Default capacity is 4.
+    public GrowingRingBuffer() : this(4) { }
+    // Capture the starting capacity, for future expansion.
+    public GrowingRingBuffer(int startCapacity)
+        : base(startCapacity)
+    {
+        originalCapacity = startCapacity;
+    }
+    #endregion
 }

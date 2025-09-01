@@ -2,6 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsNotAsErrors />
     <RootNamespace>RingBufferTests</RootNamespace>
     <AssemblyName>RingBufferTests</AssemblyName>
     <AssemblyTitle>RingBufferTests</AssemblyTitle>

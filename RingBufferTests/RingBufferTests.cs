@@ -21,155 +21,172 @@ using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using RingBuffer;
 
-namespace RingBufferTests {
-    [TestClass]
-    public class RingBufferTests {
+namespace RingBufferTests;
 
-        private int iterations = 1000;
+[TestClass]
+public class RingBufferTests
+{
 
-        private int knownValue = 1;
+    private int iterations = 1000;
 
-        /// <summary>
-        /// Ensures that size is correctly augmented when items are added.
-        /// </summary>
-        [TestMethod()]
-        public void PutIncrementsSize() {
-            RingBuffer<int> _buffer = new RingBuffer<int>(iterations);
-            for(int i = 0; i < iterations; i++) {
-                int _tmp = i;
-                _buffer.Add(_tmp);
-                Assert.AreEqual(i + 1, _buffer.Size, "Size is not equal to number of elements added.");
-            }
+    private int knownValue = 1;
+
+    /// <summary>
+    /// Ensures that size is correctly augmented when items are added.
+    /// </summary>
+    [TestMethod()]
+    public void PutIncrementsSize()
+    {
+        var buffer = new RingBuffer<int>(iterations);
+        for (int i = 0; i < iterations; i++)
+        {
+            int tmp = i;
+            buffer.Add(tmp);
+            Assert.AreEqual(i + 1, buffer.Size, "Size is not equal to number of elements added.");
         }
+    }
 
-        /// <summary>
-        /// Ensures that size is correctly adjusted when elements are removed.
-        /// </summary>
-        [TestMethod()]
-        public void GetDecrementsSize() {
-            RingBuffer<int> _buffer = new RingBuffer<int>(iterations);
-            populateBuffer(iterations, _buffer);
-            for(int i = iterations; i > 0; i--) {
-                int _tmp = _buffer.Get();
-                Assert.AreEqual(i-1, _buffer.Size, "Size does not reflect the correct number of removed elements.");
-            }
+    /// <summary>
+    /// Ensures that size is correctly adjusted when elements are removed.
+    /// </summary>
+    [TestMethod()]
+    public void GetDecrementsSize()
+    {
+        var buffer = new RingBuffer<int>(iterations);
+        PopulateBuffer(iterations, buffer);
+        for (int i = iterations; i > 0; i--)
+        {
+            int tmp = buffer.Get();
+            Assert.AreEqual(i - 1, buffer.Size, "Size does not reflect the correct number of removed elements.");
         }
+    }
 
-        /// <summary>
-        /// Ensures that capacity expands as needed
-        /// </summary>
-        /*[TestMethod()]
-        public void CapacityExpands() {
-            int _startCapacity = 12;
-            RingBuffer<double> _testBuffer = new RingBuffer<double>(_startCapacity);
-            for(int i = 0; i < _startCapacity + 1; i++) {
-                _testBuffer.Add((double)i);
-            }
-            Assert.AreEqual(_startCapacity * 2, _testBuffer.Capacity, "Capacity not expanded");
-            Assert.AreEqual(_startCapacity + 1, _testBuffer.Size, "incorrect number of elements");
-        }*/
-
-        /// <summary>
-        /// Ensures that head/tail move properly by testing the value of data
-        /// returned by get.
-        /// </summary>
-        [TestMethod()]
-        public void RetrievedInCorrectOrder() {
-            RingBuffer<int> _buffer = new RingBuffer<int>(iterations);
-            populateBuffer(iterations, _buffer);
-            for(int i = 0; i < iterations; i++) {
-                int _tmp = _buffer.Get();
-                Assert.AreEqual(i, _tmp, "Incorrect Sequence");
-            }
+    /// <summary>
+    /// Ensures that capacity expands as needed
+    /// </summary>
+    /*[TestMethod()]
+    public void CapacityExpands() {
+        int _startCapacity = 12;
+        RingBuffer<double> _testBuffer = new RingBuffer<double>(_startCapacity);
+        for(int i = 0; i < _startCapacity + 1; i++) {
+            _testBuffer.Add((double)i);
         }
+        Assert.AreEqual(_startCapacity * 2, _testBuffer.Capacity, "Capacity not expanded");
+        Assert.AreEqual(_startCapacity + 1, _testBuffer.Size, "incorrect number of elements");
+    }*/
 
-        /// <summary>
-        /// Ensures that an exception is thrown when Get() is called on an
-        /// empty buffer.
-        /// </summary>
-        [TestMethod()]
-        public void ThrowsError_GetEmpty() {
-            RingBuffer<byte> buffer = new RingBuffer<byte>();
-            Assert.ThrowsException<InvalidOperationException>(() => buffer.Get());
+    /// <summary>
+    /// Ensures that head/tail move properly by testing the value of data
+    /// returned by get.
+    /// </summary>
+    [TestMethod()]
+    public void RetrievedInCorrectOrder()
+    {
+        var buffer = new RingBuffer<int>(iterations);
+        PopulateBuffer(iterations, buffer);
+        for (int i = 0; i < iterations; i++)
+        {
+            int tmp = buffer.Get();
+            Assert.AreEqual(i, tmp, "Incorrect Sequence");
         }
+    }
 
-        /// <summary>
-        /// Ensures that foreach iteration covers only the range of active
-        /// items
-        /// </summary>
-        [TestMethod()]
-        public void CanIterateForeach() {
-            RingBuffer<int> buffer = new RingBuffer<int>(iterations);
-            populateBuffer(iterations, buffer);
-            int _iterations = 0;
-            foreach(int i in buffer){
-                _iterations++;
-            }
-            Assert.AreEqual(iterations, _iterations, "Wrong number of foreach iterations.");
+    /// <summary>
+    /// Ensures that an exception is thrown when Get() is called on an
+    /// empty buffer.
+    /// </summary>
+    [TestMethod()]
+    public void ThrowsError_GetEmpty()
+    {
+        var buffer = new RingBuffer<byte>();
+        Assert.ThrowsException<InvalidOperationException>(() => buffer.Get());
+    }
+
+    /// <summary>
+    /// Ensures that foreach iteration covers only the range of active
+    /// items
+    /// </summary>
+    [TestMethod()]
+    public void CanIterateForeach()
+    {
+        var buffer = new RingBuffer<int>(iterations);
+        PopulateBuffer(iterations, buffer);
+        int iterationCount = 0;
+        foreach (int i in buffer)
+        {
+            iterationCount++;
         }
+        Assert.AreEqual(iterations, iterationCount, "Wrong number of foreach iterations.");
+    }
 
-        /// <summary>
-        /// Ensures that the contains function returns the correct value.
-        /// </summary>
-        [TestMethod()]
-        public void ContainsReturnsCorrectly() {
-            RingBuffer<int> _buffer = new RingBuffer<int>(iterations + 2);
-            _buffer.Add(knownValue - 1);
-            bool _containsKnownValue = _buffer.Contains(knownValue);
-            Assert.AreEqual(false, _containsKnownValue);
-            populateBuffer(iterations, _buffer);
-            _buffer.Add(knownValue);
-            _containsKnownValue = _buffer.Contains(knownValue);
-            Assert.AreEqual(true, _containsKnownValue);
+    /// <summary>
+    /// Ensures that the contains function returns the correct value.
+    /// </summary>
+    [TestMethod()]
+    public void ContainsReturnsCorrectly()
+    {
+        var buffer = new RingBuffer<int>(iterations + 2);
+        buffer.Add(knownValue - 1);
+        bool containsKnownValue = buffer.Contains(knownValue);
+        Assert.AreEqual(false, containsKnownValue);
+        PopulateBuffer(iterations, buffer);
+        buffer.Add(knownValue);
+        containsKnownValue = buffer.Contains(knownValue);
+        Assert.AreEqual(true, containsKnownValue);
 
+    }
+
+    /// <summary>
+    /// Ensures that after calling Clear(), the RingBuffer contains no
+    /// items.
+    /// </summary>
+    [TestMethod()]
+    public void ClearAsExpected()
+    {
+        var buffer = new RingBuffer<int>(iterations);
+        PopulateBuffer(iterations, buffer);
+        buffer.Clear();
+        Assert.AreEqual(0, buffer.Count);
+    }
+
+    /// <summary>
+    /// Ensures that CopyTo() behaves properly.
+    /// </summary>
+    [TestMethod()]
+    public void CopyToTest()
+    {
+        var buffer = new RingBuffer<int>(iterations);
+        PopulateBuffer(iterations, buffer);
+        int[] array = new int[iterations + 1];
+        buffer.CopyTo(array, 1);
+        Assert.AreEqual(default(int), array[0]);
+        for (int i = 1; i < array.Length; i++)
+        {
+            Assert.AreEqual(i - 1, array[i]);
         }
+    }
 
-        /// <summary>
-        /// Ensures that after calling Clear(), the RingBuffer contains no
-        /// items.
-        /// </summary>
-        [TestMethod()]
-        public void ClearAsExpected() {
-            RingBuffer<int> _buffer = new RingBuffer<int>(iterations);
-            populateBuffer(iterations, _buffer);
-            _buffer.Clear();
-            Assert.AreEqual(0, _buffer.Count);
-        }
+    /// <summary>
+    /// Tests the Size and return value of Contains() after a Remove()
+    /// to ensure that the item was removed.
+    /// </summary>
+    [TestMethod()]
+    public void ItemIsRemoved()
+    {
+        var buffer = new RingBuffer<int>(iterations);
+        PopulateBuffer(iterations, buffer);
+        int preRemoveSize = buffer.Count;
+        buffer.Remove(0);
+        Assert.AreEqual(false, buffer.Contains(0));
+        Assert.AreEqual(preRemoveSize - 1, buffer.Count);
 
-        /// <summary>
-        /// Ensures that CopyTo() behaves properly.
-        /// </summary>
-        [TestMethod()]
-        public void CopyToTest() {
-            RingBuffer<int> _buffer = new RingBuffer<int>(iterations);
-            populateBuffer(iterations, _buffer);
-            int[] _array = new int[iterations + 1];
-            _buffer.CopyTo(_array, 1);
-            Assert.AreEqual(default(int), _array[0]);
-            for(int i = 1; i < _array.Length; i++) {
-                Assert.AreEqual(i - 1, _array[i]);
-            }
-        }
+    }
 
-        /// <summary>
-        /// Tests the Size and return value of Contains() after a Remove()
-        /// to ensure that the item was removed.
-        /// </summary>
-        [TestMethod()]
-        public void ItemIsRemoved() {
-            RingBuffer<int> _buffer = new RingBuffer<int>(iterations);
-            populateBuffer(iterations, _buffer);
-            int _preRemoveSize = _buffer.Count;
-            _buffer.Remove(0);
-            Assert.AreEqual(false, _buffer.Contains(0));
-            Assert.AreEqual(_preRemoveSize - 1, _buffer.Count);
-
-        }
-
-        private void populateBuffer(int elements, RingBuffer<int> buffer) {
-            for(int i = 0; i < elements; i++) {
-                buffer.Add(i);
-            }
+    private void PopulateBuffer(int elements, RingBuffer<int> buffer)
+    {
+        for (int i = 0; i < elements; i++)
+        {
+            buffer.Add(i);
         }
     }
 }
