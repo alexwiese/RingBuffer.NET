@@ -208,7 +208,7 @@ public class RingBufferTests
     public void OverflowAllowed_OverwritesOldestItem()
     {
         var buffer = new RingBuffer<int>(3, true);
-        
+
         // Fill buffer
         buffer.Add(1);
         buffer.Add(2);
@@ -232,10 +232,10 @@ public class RingBufferTests
     public void OverflowNotAllowed_ThrowsException()
     {
         var buffer = new RingBuffer<int>(2, false);
-        
+
         buffer.Add(1);
         buffer.Add(2);
-        
+
         Assert.ThrowsException<InvalidOperationException>(() => buffer.Add(3));
     }
 
@@ -272,7 +272,7 @@ public class RingBufferTests
         stringBuffer.Add("first");
         stringBuffer.Add("second");
         stringBuffer.Add("third");
-        
+
         Assert.AreEqual("first", stringBuffer.Get());
         Assert.AreEqual("second", stringBuffer.Get());
         Assert.AreEqual("third", stringBuffer.Get());
@@ -281,7 +281,7 @@ public class RingBufferTests
         var doubleBuffer = new RingBuffer<double>(2);
         doubleBuffer.Add(3.14);
         doubleBuffer.Add(2.71);
-        
+
         Assert.AreEqual(3.14, doubleBuffer.Get());
         Assert.AreEqual(2.71, doubleBuffer.Get());
     }
@@ -293,7 +293,7 @@ public class RingBufferTests
     public void NullValues_HandledCorrectly()
     {
         var buffer = new RingBuffer<string?>(3);
-        
+
         buffer.Add("test");
         buffer.Add(null);
         buffer.Add("another");
@@ -316,15 +316,15 @@ public class RingBufferTests
     {
         var buffer = new RingBuffer<int>(10000);
         Assert.AreEqual(10000, buffer.Capacity);
-        
+
         // Add many items
         for (int i = 0; i < 5000; i++)
         {
             buffer.Add(i);
         }
-        
+
         Assert.AreEqual(5000, buffer.Size);
-        
+
         // Verify order
         for (int i = 0; i < 5000; i++)
         {
@@ -339,7 +339,7 @@ public class RingBufferTests
     public void PartiallyFilledBuffer_EnumeratesCorrectly()
     {
         var buffer = new RingBuffer<int>(10);
-        
+
         // Only add 5 items
         for (int i = 0; i < 5; i++)
         {
@@ -366,7 +366,7 @@ public class RingBufferTests
     public void CircularBehavior_WorksAfterWrapping()
     {
         var buffer = new RingBuffer<int>(3, true); // Allow overflow
-        
+
         // Add more items than capacity to test wrapping
         for (int i = 0; i < 10; i++)
         {
@@ -386,19 +386,19 @@ public class RingBufferTests
     public void MixedOperations_WorkCorrectly()
     {
         var buffer = new RingBuffer<int>(5);
-        
+
         // Add some items
         buffer.Add(1);
         buffer.Add(2);
         buffer.Add(3);
-        
+
         // Remove one
         Assert.AreEqual(1, buffer.Get());
-        
+
         // Add more
         buffer.Add(4);
         buffer.Add(5);
-        
+
         // Check remaining order
         Assert.AreEqual(2, buffer.Get());
         Assert.AreEqual(3, buffer.Get());
@@ -413,18 +413,18 @@ public class RingBufferTests
     public void Count_ConsistentWithSize()
     {
         var buffer = new RingBuffer<int>(5);
-        
+
         Assert.AreEqual(buffer.Size, buffer.Count);
-        
+
         buffer.Add(1);
         Assert.AreEqual(buffer.Size, buffer.Count);
         Assert.AreEqual(1, buffer.Count);
-        
+
         buffer.Add(2);
         buffer.Add(3);
         Assert.AreEqual(buffer.Size, buffer.Count);
         Assert.AreEqual(3, buffer.Count);
-        
+
         buffer.Get();
         Assert.AreEqual(buffer.Size, buffer.Count);
         Assert.AreEqual(2, buffer.Count);

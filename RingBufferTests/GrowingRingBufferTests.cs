@@ -64,7 +64,7 @@ public class GrowingRingBufferTests
     public void Put_ExpandsByOriginalCapacityIncrement()
     {
         var buffer = new GrowingRingBuffer<int>(3);
-        
+
         // Fill initial capacity
         for (int i = 0; i < 3; i++)
         {
@@ -92,7 +92,7 @@ public class GrowingRingBufferTests
     public void Put_MaintainsCorrectOrder()
     {
         var buffer = new GrowingRingBuffer<int>(2);
-        
+
         // Fill and expand
         buffer.Put(1);
         buffer.Put(2);
@@ -110,20 +110,20 @@ public class GrowingRingBufferTests
     public void Add_CallsBasePutMethodButDoesNotExpand()
     {
         var buffer = new GrowingRingBuffer<int>(2);
-        
+
         // Fill initial capacity using Add (which calls base.Put)
         buffer.Add(1);
         buffer.Add(2);
-        
+
         // This should throw exception because Add calls base.Put, not GrowingRingBuffer.Put
         Assert.ThrowsException<InvalidOperationException>(() => buffer.Add(3));
-        
+
         // But using Put directly should work and expand
         var buffer2 = new GrowingRingBuffer<int>(2);
         buffer2.Put(1);
         buffer2.Put(2);
         buffer2.Put(3); // Should expand
-        
+
         Assert.AreEqual(3, buffer2.Size);
         Assert.AreEqual(4, buffer2.Capacity);
     }
@@ -132,7 +132,7 @@ public class GrowingRingBufferTests
     public void MultipleExpansions_WorkCorrectly()
     {
         var buffer = new GrowingRingBuffer<int>(2);
-        
+
         // Add enough items to cause multiple expansions
         for (int i = 0; i < 10; i++)
         {
@@ -153,7 +153,7 @@ public class GrowingRingBufferTests
     public void Enumeration_WorksAfterExpansion()
     {
         var buffer = new GrowingRingBuffer<int>(3);
-        
+
         // Add items causing expansion
         for (int i = 0; i < 7; i++)
         {
@@ -174,18 +174,18 @@ public class GrowingRingBufferTests
     public void Clear_ResetsAfterExpansion()
     {
         var buffer = new GrowingRingBuffer<int>(2);
-        
+
         // Add items causing expansion
         for (int i = 0; i < 5; i++)
         {
             buffer.Put(i);
         }
-        
+
         Assert.AreEqual(5, buffer.Size);
         Assert.AreEqual(6, buffer.Capacity); // 2 -> 4 -> 6
 
         buffer.Clear();
-        
+
         Assert.AreEqual(0, buffer.Size);
         Assert.AreEqual(6, buffer.Capacity); // Capacity remains expanded
     }
@@ -194,7 +194,7 @@ public class GrowingRingBufferTests
     public void Contains_WorksAfterExpansion()
     {
         var buffer = new GrowingRingBuffer<int>(2);
-        
+
         // Add items causing expansion
         for (int i = 0; i < 5; i++)
         {
@@ -206,7 +206,7 @@ public class GrowingRingBufferTests
         {
             Assert.IsTrue(buffer.Contains(i));
         }
-        
+
         Assert.IsFalse(buffer.Contains(5));
         Assert.IsFalse(buffer.Contains(-1));
     }
@@ -215,7 +215,7 @@ public class GrowingRingBufferTests
     public void CopyTo_WorksAfterExpansion()
     {
         var buffer = new GrowingRingBuffer<int>(2);
-        
+
         // Add items causing expansion
         for (int i = 0; i < 5; i++)
         {
@@ -236,7 +236,7 @@ public class GrowingRingBufferTests
     public void Remove_WorksAfterExpansion()
     {
         var buffer = new GrowingRingBuffer<int>(2);
-        
+
         // Add items causing expansion
         for (int i = 0; i < 5; i++)
         {
@@ -246,7 +246,7 @@ public class GrowingRingBufferTests
         Assert.IsTrue(buffer.Remove(2));
         Assert.AreEqual(4, buffer.Size);
         Assert.IsFalse(buffer.Contains(2));
-        
+
         Assert.IsFalse(buffer.Remove(10)); // Non-existent item
     }
 }
