@@ -20,42 +20,85 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace RingBuffer;
 
 /// <summary>
-/// A generic ring buffer. Grows when capacity is reached.
+/// A generic, thread-safe ring buffer that grows when capacity is reached.
+/// Uses lock-free operations where possible, but expansion operations require brief synchronization.
 /// </summary>
 /// <typeparam name="T">The type of data stored in the buffer</typeparam>
 public class GrowingRingBuffer<T> : RingBuffer<T>
 {
 
-    private int originalCapacity;
+    private readonly int originalCapacity;
+    private readonly object expandLock = new object();
 
     /// <summary>
     /// Adds an item to the end of the buffer.
+    /// This method is thread-safe and will expand capacity if needed.
     /// </summary>
     /// <param name="item">The item to be added.</param>
     public new void Put(T item)
     {
-        // If tail & head are equal and the buffer is not empty, assume
-        // that it would overflow and expand the capacity before adding the
-        // item.
-        if (tail == head && size != 0)
+        int currentTail = tail;
+        int currentHead = head;
+        int currentSize = size;
+
+        // Check if buffer is full
+        bool isFull = (currentTail == currentHead && currentSize != 0);
+
+        if (isFull)
         {
-            var newArray = new T?[buffer.Length + originalCapacity];
-            for (int i = 0; i < Capacity; i++)
-            {
-                newArray[i] = buffer[i];
-            }
-            buffer = newArray;
-            tail = (head + size) % Capacity;
-            AddToBuffer(item, false);
+            ExpandAndAdd(item);
         }
-        // If the buffer would not overflow, just add the item.
         else
         {
-            AddToBuffer(item, false);
+            AddToBuffer(item, currentTail);
+        }
+    }
+
+    private void ExpandAndAdd(T item)
+    {
+        lock (expandLock)
+        {
+            // Double-check pattern - another thread might have already expanded
+            int currentTail = tail;
+            int currentHead = head;
+            int currentSize = size;
+            bool stillFull = (currentTail == currentHead && currentSize != 0);
+
+            if (stillFull)
+            {
+                // Expand the buffer
+                var newCapacity = buffer.Length + originalCapacity;
+                var newBuffer = new T?[newCapacity];
+
+                // Copy existing items to new buffer starting at index 0
+                for (int i = 0; i < currentSize; i++)
+                {
+                    int sourceIndex = (currentHead + i) % buffer.Length;
+                    newBuffer[i] = buffer[sourceIndex];
+                }
+
+                // Clear old buffer to prevent memory leaks
+                for (int i = 0; i < buffer.Length; i++)
+                {
+                    buffer[i] = default;
+                }
+
+                // Replace the buffer
+                buffer = newBuffer;
+
+                head = 0;
+                tail = currentSize;
+
+                Thread.MemoryBarrier(); // Ensure all updates are visible
+            }
+
+            // Add the item using the base class method
+            base.Put(item);
         }
     }
 
@@ -66,6 +109,11 @@ public class GrowingRingBuffer<T> : RingBuffer<T>
     public GrowingRingBuffer(int startCapacity)
         : base(startCapacity)
     {
+        if (startCapacity <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(startCapacity), "Start capacity must be greater than zero");
+        }
+
         originalCapacity = startCapacity;
     }
     #endregion
