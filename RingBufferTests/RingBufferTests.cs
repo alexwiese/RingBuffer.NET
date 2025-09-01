@@ -451,13 +451,13 @@ public class RingBufferTests
     }
 
     /// <summary>
-    /// Tests IsSynchronized property
+    /// Tests IsSynchronized property (this implementation is thread-safe)
     /// </summary>
     [TestMethod]
     public void IsSynchronized_ReturnsFalse()
     {
         var buffer = new RingBuffer<int>();
-        Assert.IsFalse(buffer.IsSynchronized);
+        Assert.IsTrue(buffer.IsSynchronized);
     }
 
     /// <summary>

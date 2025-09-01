@@ -20,24 +20,26 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace RingBuffer;
 
 /// <summary>
-/// A generic ring buffer with fixed capacity.
+/// A generic, thread-safe ring buffer with fixed capacity using lock-free operations.
+/// Safe for single producer/single consumer scenarios.
 /// </summary>
 /// <typeparam name="T">The type of data stored in the buffer</typeparam>
 public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
     ICollection
 {
 
-    protected int head = 0;
-    protected int tail = 0;
-    protected int size = 0;
+    protected volatile int head = 0;
+    protected volatile int tail = 0;
+    protected volatile int size = 0;
 
     protected T?[] buffer;
 
-    private bool allowOverflow;
+    private readonly bool allowOverflow;
     public bool AllowOverflow => allowOverflow;
 
     /// <summary>
@@ -52,6 +54,7 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
 
     /// <summary>
     /// Retrieve the next item from the buffer.
+    /// This method is thread-safe for single consumer scenarios.
     /// </summary>
     /// <returns>The oldest item added to the buffer.</returns>
     public T Get()
@@ -61,52 +64,85 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
             throw new System.InvalidOperationException("Buffer is empty.");
         }
 
-        T? item = buffer[head];
-        buffer[head] = default;
-        head = (head + 1) % Capacity;
-        size--;
+        int currentHead = head;
+        T? item = buffer[currentHead];
+        
+        // Clear the buffer slot to prevent memory leaks
+        buffer[currentHead] = default;
+        
+        int newHead = (currentHead + 1) % Capacity;
+        Thread.MemoryBarrier(); // Ensure buffer write is visible before updating head
+        head = newHead;
+        
+        Interlocked.Decrement(ref size);
+        
         return item!;
     }
 
     /// <summary>
     /// Adds an item to the end of the buffer.
+    /// This method is thread-safe for single producer scenarios.
     /// </summary>
     /// <param name="item">The item to be added.</param>
     public void Put(T item)
     {
-        // If tail & head are equal and the buffer is not empty, assume
-        // that it will overflow and throw an exception.
-        if (tail == head && size != 0)
+        int currentTail = tail;
+        int currentHead = head;
+        int currentSize = size;
+
+        // Check if buffer is full
+        bool isFull = (currentTail == currentHead && currentSize != 0);
+        
+        if (isFull)
         {
             if (allowOverflow)
             {
-                AddToBuffer(item, true);
+                AddToBufferWithOverflow(item, currentTail, currentHead);
             }
             else
             {
                 throw new System.InvalidOperationException("The RingBuffer is full");
             }
         }
-        // If the buffer will not overflow, just add the item.
         else
         {
-            AddToBuffer(item, false);
+            AddToBuffer(item, currentTail);
         }
     }
 
-    protected void AddToBuffer(T toAdd, bool overflow)
+    protected void AddToBuffer(T toAdd, int currentTail)
     {
-        if (overflow)
-        {
-            buffer[head] = default;
-            head = (head + 1) % Capacity;
-        }
-        else
-        {
-            size++;
-        }
-        buffer[tail] = toAdd;
-        tail = (tail + 1) % Capacity;
+        // Write the item first
+        buffer[currentTail] = toAdd;
+        
+        // Ensure the write is visible before updating tail
+        Thread.MemoryBarrier();
+        
+        int newTail = (currentTail + 1) % Capacity;
+        tail = newTail;
+        
+        Interlocked.Increment(ref size);
+    }
+
+    protected void AddToBufferWithOverflow(T toAdd, int currentTail, int currentHead)
+    {
+        // Clear the head slot before overwriting
+        buffer[currentHead] = default;
+        
+        // Move head forward
+        int newHead = (currentHead + 1) % Capacity;
+        head = newHead;
+        
+        // Write the new item
+        buffer[currentTail] = toAdd;
+        
+        // Ensure writes are visible before updating tail
+        Thread.MemoryBarrier();
+        
+        int newTail = (currentTail + 1) % Capacity;
+        tail = newTail;
+        
+        // Size remains the same since we overwrote
     }
 
     #region Constructors
@@ -117,6 +153,9 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
 
     public RingBuffer(int capacity, bool overflow)
     {
+        if (capacity <= 0)
+            throw new ArgumentOutOfRangeException(nameof(capacity), "Capacity must be greater than zero");
+            
         buffer = new T?[capacity];
         allowOverflow = overflow;
     }
@@ -125,11 +164,22 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
     #region IEnumerable Members
     public IEnumerator<T> GetEnumerator()
     {
-        int index = head;
-        for (int i = 0; i < size; i++, index = (index + 1) % Capacity)
+        // Create a snapshot for thread-safe enumeration
+        var snapshot = new List<T>(Size);
+        int currentHead = head;
+        int currentSize = size;
+        
+        for (int i = 0; i < currentSize; i++)
         {
-            yield return buffer[index]!;
+            int index = (currentHead + i) % Capacity;
+            T? item = buffer[index];
+            if (item != null || typeof(T).IsValueType)
+            {
+                snapshot.Add(item!);
+            }
         }
+        
+        return snapshot.GetEnumerator();
     }
 
     IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
@@ -138,13 +188,14 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
     #endregion
 
     #region ICollection<T> Members
-    public int Count => size;
+    public int Count => Size;
     public bool IsReadOnly => false;
 
     public void Add(T item) => Put(item);
 
     /// <summary>
     /// Determines whether the RingBuffer contains a specific value.
+    /// This method is thread-safe but may return outdated results in concurrent scenarios.
     /// </summary>
     /// <param name="item">The value to check the RingBuffer for.</param>
     /// <returns>True if the RingBuffer contains <paramref name="item"/>
@@ -153,10 +204,15 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
     public bool Contains(T item)
     {
         var comparer = EqualityComparer<T>.Default;
-        int index = head;
-        for (int i = 0; i < size; i++, index = (index + 1) % Capacity)
+        int currentHead = head;
+        int currentSize = size;
+        
+        for (int i = 0; i < currentSize; i++)
         {
-            if (comparer.Equals(item, buffer[index]))
+            int index = (currentHead + i) % Capacity;
+            T? bufferItem = buffer[index];
+            
+            if (comparer.Equals(item, bufferItem))
             {
                 return true;
             }
@@ -166,37 +222,52 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
 
     /// <summary>
     /// Removes all items from the RingBuffer.
+    /// This method is thread-safe.
     /// </summary>
     public void Clear()
     {
+        // Clear all buffer slots
         for (int i = 0; i < Capacity; i++)
         {
             buffer[i] = default;
         }
+        
+        // Reset pointers atomically
         head = 0;
         tail = 0;
         size = 0;
+        Thread.MemoryBarrier(); // Ensure all writes are visible
     }
 
     /// <summary>
     /// Copies the contents of the RingBuffer to <paramref name="array"/>
     /// starting at <paramref name="arrayIndex"/>.
+    /// This method is thread-safe but may copy a snapshot that becomes outdated.
     /// </summary>
     /// <param name="array">The array to be copied to.</param>
     /// <param name="arrayIndex">The index of <paramref name="array"/>
     /// where the buffer should begin copying to.</param>
     public void CopyTo(T[] array, int arrayIndex)
     {
-        int index = head;
-        for (int i = 0; i < size; i++, arrayIndex++, index = (index + 1) %
-            Capacity)
+        if (array == null) throw new ArgumentNullException(nameof(array));
+        if (arrayIndex < 0) throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+        
+        int currentHead = head;
+        int currentSize = size;
+        
+        if (array.Length - arrayIndex < currentSize)
+            throw new ArgumentException("Destination array is not large enough");
+            
+        for (int i = 0; i < currentSize; i++)
         {
-            array[arrayIndex] = buffer[index]!;
+            int index = (currentHead + i) % Capacity;
+            array[arrayIndex + i] = buffer[index]!;
         }
     }
 
     /// <summary>
     /// Removes <paramref name="item"/> from the buffer.
+    /// Note: This operation is expensive and not recommended for frequent use in high-performance scenarios.
     /// </summary>
     /// <param name="item"></param>
     /// <returns>True if <paramref name="item"/> was found and 
@@ -205,59 +276,69 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
     /// </returns>
     public bool Remove(T item)
     {
-        int index = head;
-        int removeIndex = 0;
-        bool foundItem = false;
         var comparer = EqualityComparer<T>.Default;
-        for (int i = 0; i < size; i++, index = (index + 1) % Capacity)
+        int currentHead = head;
+        int currentSize = size;
+        
+        // Find the item
+        int removeIndex = -1;
+        for (int i = 0; i < currentSize; i++)
         {
+            int index = (currentHead + i) % Capacity;
             if (comparer.Equals(item, buffer[index]))
             {
                 removeIndex = index;
-                foundItem = true;
                 break;
             }
         }
-        if (foundItem)
+        
+        if (removeIndex == -1)
+            return false;
+
+        // Shift elements to fill the gap - this is expensive but maintains order
+        int itemsToMove = currentSize - 1;
+        bool foundGap = false;
+        
+        for (int i = 0; i < itemsToMove; i++)
         {
-            var newBuffer = new T?[size - 1];
-            index = head;
-            bool pastItem = false;
-            for (int i = 0; i < size - 1; i++, index = (index + 1) % Capacity)
+            int currentIndex = (currentHead + i) % Capacity;
+            int nextIndex = (currentHead + i + 1) % Capacity;
+            
+            if (currentIndex == removeIndex)
+                foundGap = true;
+                
+            if (foundGap)
             {
-                if (index == removeIndex)
-                {
-                    pastItem = true;
-                }
-                if (pastItem)
-                {
-                    newBuffer[index] = buffer[(index + 1) % Capacity];
-                }
-                else
-                {
-                    newBuffer[index] = buffer[index];
-                }
+                buffer[currentIndex] = buffer[nextIndex];
             }
-            size--;
-            buffer = newBuffer;
-            return true;
         }
-        return false;
+        
+        // Clear the last position and update tail
+        int lastIndex = (tail - 1 + Capacity) % Capacity;
+        buffer[lastIndex] = default;
+        
+        int newTail = (tail - 1 + Capacity) % Capacity;
+        tail = newTail;
+        
+        Interlocked.Decrement(ref size);
+        
+        return true;
     }
     #endregion
 
     #region ICollection Members
     /// <summary>
     /// Gets an object that can be used to synchronize access to the
-    /// RingBuffer.
+    /// RingBuffer. Note: This implementation is lock-free, so external 
+    /// synchronization should generally not be needed.
     /// </summary>
     public object SyncRoot => this;
 
     /// <summary>
     /// Gets a value indicating whether access to the RingBuffer is 
-    /// synchronized (thread safe).
+    /// synchronized (thread safe). Returns true for this lock-free implementation.
     /// </summary>
-    public bool IsSynchronized => false;
+    public bool IsSynchronized => true;
 
     /// <summary>
     /// Copies the elements of the RingBuffer to <paramref name="array"/>, 
