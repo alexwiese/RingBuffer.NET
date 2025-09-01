@@ -145,7 +145,7 @@ public class ThreadSafetyTests
         const int itemsPerProducer = 100; // Reduced from 1000
         const int producerCount = 2; // Reduced from 4
         const int expectedTotal = itemsPerProducer * producerCount;
-        
+
         var buffer = new RingBuffer<int>(50, true);
         var allProducedItems = new List<int>();
         var consumedItems = new List<int>();
@@ -166,7 +166,7 @@ public class ThreadSafetyTests
                     buffer.Put(item);
                     localItems.Add(item);
                 }
-                
+
                 lock (lockObj)
                 {
                     allProducedItems.AddRange(localItems);
@@ -207,7 +207,7 @@ public class ThreadSafetyTests
         // Note: With overflow=true, we may lose some items, but we should never have more consumed than produced
         Assert.IsTrue(consumedItems.Count <= expectedTotal, "Consumed more items than produced");
         Assert.AreEqual(0, buffer.Size, "Buffer should be empty after consumption");
-        
+
         // Verify no duplicate items (each producer produces unique items)
         var uniqueConsumed = consumedItems.Distinct().ToList();
         Assert.AreEqual(consumedItems.Count, uniqueConsumed.Count, "Duplicate items detected");
@@ -223,13 +223,13 @@ public class ThreadSafetyTests
         var lockObj = new object();
 
         var tasks = new Task[threadCount];
-        
+
         // Half the threads will be producers, half consumers
         for (int t = 0; t < threadCount; t++)
         {
             int threadId = t;
             bool isProducer = threadId < threadCount / 2;
-            
+
             tasks[t] = Task.Run(() =>
             {
                 try
@@ -287,7 +287,7 @@ public class ThreadSafetyTests
             var allExceptions = string.Join(Environment.NewLine, exceptions.Select(e => e.ToString()));
             Assert.Fail($"Unexpected exceptions during concurrent access: {allExceptions}");
         }
-        
+
         // The buffer should be in a consistent state
         Assert.IsTrue(buffer.Size >= 0 && buffer.Size <= buffer.Capacity, "Buffer size is inconsistent");
     }

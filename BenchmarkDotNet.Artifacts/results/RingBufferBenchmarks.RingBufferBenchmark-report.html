@@ -2,7 +2,7 @@
 <html lang='en'>
 <head>
 <meta charset='utf-8' />
-<title>RingBufferBenchmarks.RingBufferBenchmark-20250901-163009</title>
+<title>RingBufferBenchmarks.RingBufferBenchmark-20250901-164501</title>
 
 <style type="text/css">
 	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
@@ -23,20 +23,20 @@ AMD EPYC 7763, 1 CPU, 4 logical and 2 physical cores
 </code></pre>
 
 <table>
-<thead><tr><th>Method                     </th><th>Mean</th><th>Error</th><th>StdDev</th><th>Ratio</th><th>RatioSD</th><th>Gen0</th><th>Allocated</th><th>Alloc Ratio</th>
+<thead><tr><th>Method                     </th><th>Mean</th><th>Error</th><th>StdDev</th><th>Ratio</th><th>RatioSD</th><th>Gen0</th><th>Gen1</th><th>Allocated</th><th>Alloc Ratio</th>
 </tr>
-</thead><tbody><tr><td>RingBuffer_Foreach</td><td>10.721 &mu;s</td><td>0.1555 &mu;s</td><td>0.0241 &mu;s</td><td>1.61</td><td>0.00</td><td>-</td><td>40 B</td><td>NA</td>
-</tr><tr><td>GrowingRingBuffer_Foreach</td><td>10.716 &mu;s</td><td>0.0211 &mu;s</td><td>0.0033 &mu;s</td><td>1.61</td><td>0.00</td><td>-</td><td>40 B</td><td>NA</td>
-</tr><tr><td>RingBuffer_Get</td><td>12.989 &mu;s</td><td>0.0066 &mu;s</td><td>0.0017 &mu;s</td><td>1.95</td><td>0.00</td><td>-</td><td>-</td><td>NA</td>
-</tr><tr><td>GrowingRingBuffer_Get</td><td>12.776 &mu;s</td><td>0.0266 &mu;s</td><td>0.0041 &mu;s</td><td>1.92</td><td>0.00</td><td>-</td><td>-</td><td>NA</td>
-</tr><tr><td>Queue_Dequeue</td><td>3.576 &mu;s</td><td>0.0048 &mu;s</td><td>0.0012 &mu;s</td><td>0.54</td><td>0.00</td><td>-</td><td>-</td><td>NA</td>
-</tr><tr><td>GrowingRingBuffer_WithExpansion</td><td>60.127 &mu;s</td><td>7.5808 &mu;s</td><td>1.9687 &mu;s</td><td>9.03</td><td>0.27</td><td>12.2070</td><td>204400 B</td><td>NA</td>
-</tr><tr><td>RingBuffer_MixedOperations</td><td>20.318 &mu;s</td><td>0.0373 &mu;s</td><td>0.0097 &mu;s</td><td>3.05</td><td>0.00</td><td>-</td><td>-</td><td>NA</td>
-</tr><tr><td>GrowingRingBuffer_MixedOperations</td><td>20.018 &mu;s</td><td>0.0094 &mu;s</td><td>0.0024 &mu;s</td><td>3.00</td><td>0.00</td><td>-</td><td>-</td><td>NA</td>
-</tr><tr><td>RingBuffer_Overflow</td><td>6.396 &mu;s</td><td>0.0041 &mu;s</td><td>0.0006 &mu;s</td><td>0.96</td><td>0.00</td><td>-</td><td>-</td><td>NA</td>
-</tr><tr><td>RingBuffer_Put</td><td>6.662 &mu;s</td><td>0.0116 &mu;s</td><td>0.0030 &mu;s</td><td>1.00</td><td>0.00</td><td>-</td><td>-</td><td>NA</td>
-</tr><tr><td>GrowingRingBuffer_Put</td><td>6.664 &mu;s</td><td>0.0135 &mu;s</td><td>0.0035 &mu;s</td><td>1.00</td><td>0.00</td><td>-</td><td>-</td><td>NA</td>
-</tr><tr><td>Queue_Enqueue</td><td>1.998 &mu;s</td><td>0.0110 &mu;s</td><td>0.0029 &mu;s</td><td>0.30</td><td>0.00</td><td>-</td><td>-</td><td>NA</td>
+</thead><tbody><tr><td>RingBuffer_Foreach</td><td>10.233 &mu;s</td><td>0.1116 &mu;s</td><td>0.0290 &mu;s</td><td>1.56</td><td>0.00</td><td>0.2441</td><td>-</td><td>4096 B</td><td>NA</td>
+</tr><tr><td>GrowingRingBuffer_Foreach</td><td>10.201 &mu;s</td><td>0.0892 &mu;s</td><td>0.0232 &mu;s</td><td>1.56</td><td>0.00</td><td>0.2441</td><td>-</td><td>4096 B</td><td>NA</td>
+</tr><tr><td>RingBuffer_Get</td><td>12.452 &mu;s</td><td>0.0498 &mu;s</td><td>0.0077 &mu;s</td><td>1.90</td><td>0.00</td><td>-</td><td>-</td><td>-</td><td>NA</td>
+</tr><tr><td>GrowingRingBuffer_Get</td><td>12.458 &mu;s</td><td>0.0275 &mu;s</td><td>0.0071 &mu;s</td><td>1.90</td><td>0.00</td><td>-</td><td>-</td><td>-</td><td>NA</td>
+</tr><tr><td>Queue_Dequeue</td><td>3.581 &mu;s</td><td>0.0140 &mu;s</td><td>0.0036 &mu;s</td><td>0.55</td><td>0.00</td><td>-</td><td>-</td><td>-</td><td>NA</td>
+</tr><tr><td>GrowingRingBuffer_WithExpansion</td><td>141.696 &mu;s</td><td>8.4932 &mu;s</td><td>2.2057 &mu;s</td><td>21.62</td><td>0.31</td><td>12.2070</td><td>0.2441</td><td>204480 B</td><td>NA</td>
+</tr><tr><td>RingBuffer_MixedOperations</td><td>12.529 &mu;s</td><td>0.0536 &mu;s</td><td>0.0139 &mu;s</td><td>1.91</td><td>0.00</td><td>-</td><td>-</td><td>-</td><td>NA</td>
+</tr><tr><td>GrowingRingBuffer_MixedOperations</td><td>12.041 &mu;s</td><td>0.0246 &mu;s</td><td>0.0038 &mu;s</td><td>1.84</td><td>0.00</td><td>-</td><td>-</td><td>-</td><td>NA</td>
+</tr><tr><td>RingBuffer_Overflow</td><td>6.250 &mu;s</td><td>0.0131 &mu;s</td><td>0.0020 &mu;s</td><td>0.95</td><td>0.00</td><td>-</td><td>-</td><td>-</td><td>NA</td>
+</tr><tr><td>RingBuffer_Put</td><td>6.555 &mu;s</td><td>0.0141 &mu;s</td><td>0.0036 &mu;s</td><td>1.00</td><td>0.00</td><td>-</td><td>-</td><td>-</td><td>NA</td>
+</tr><tr><td>GrowingRingBuffer_Put</td><td>6.561 &mu;s</td><td>0.0232 &mu;s</td><td>0.0036 &mu;s</td><td>1.00</td><td>0.00</td><td>-</td><td>-</td><td>-</td><td>NA</td>
+</tr><tr><td>Queue_Enqueue</td><td>1.984 &mu;s</td><td>0.0028 &mu;s</td><td>0.0007 &mu;s</td><td>0.30</td><td>0.00</td><td>-</td><td>-</td><td>-</td><td>NA</td>
 </tr></tbody></table>
 </body>
 </html>

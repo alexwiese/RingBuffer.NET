@@ -1,6 +1,6 @@
 # 🔄 RingBuffer.NET
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/alexwiese/RingBuffer.NET/dotnet.yml?branch=main&style=flat-square&logo=github)](https://github.com/alexwiese/RingBuffer.NET/actions)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/alexwiese/RingBuffer.NET/ci.yml?branch=main&style=flat-square&logo=github)](https://github.com/alexwiese/RingBuffer.NET/actions)
 [![NuGet Version](https://img.shields.io/nuget/v/RingBuffer.svg?style=flat-square&logo=nuget)](https://www.nuget.org/packages/RingBuffer/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/RingBuffer.svg?style=flat-square&logo=nuget)](https://www.nuget.org/packages/RingBuffer/)
 [![.NET Version](https://img.shields.io/badge/.NET-9.0-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
@@ -13,14 +13,15 @@ A modern, generic ring buffer (circular buffer) library for C# that provides bot
 ## ✨ Features
 
 - 🎯 **Two Buffer Types**: Fixed-capacity `RingBuffer<T>` and auto-expanding `GrowingRingBuffer<T>`
-- 🔒 **Thread-Safe**: Safe for concurrent access scenarios
-- 🚀 **High Performance**: Optimized for speed with minimal allocations
+- 🔒 **Thread-Safe**: Lock-free operations safe for single producer/single consumer scenarios
+- 🚀 **High Performance**: Optimized lock-free implementation with improved speed over non-thread-safe versions
 - 🧬 **Generic**: Works with any type `T`
 - 🔄 **FIFO Operations**: First-in, first-out queue behavior
 - 📚 **Standard Interfaces**: Implements `IEnumerable<T>`, `ICollection<T>`
 - 🎛️ **Overflow Control**: Configurable overflow behavior (throw or overwrite)
 - 🆕 **Modern .NET**: Built for .NET 9.0 with nullable reference types
 - 🔧 **Zero Dependencies**: Lightweight with no external dependencies
+- ⚡ **Lock-Free**: Uses atomic operations and memory barriers for thread safety
 
 ## 📦 Installation
 
@@ -155,14 +156,24 @@ new GrowingRingBuffer<T>(int startCapacity)  // Custom initial capacity
 
 ## ⚡ Performance Characteristics
 
-| Operation | Time Complexity | Space Complexity |
-|-----------|----------------|------------------|
-| `Put()` | O(1)* | O(1) |
-| `Get()` | O(1) | O(1) |
-| `Contains()` | O(n) | O(1) |
-| Enumeration | O(n) | O(1) |
+| Operation | Time Complexity | Space Complexity | Thread Safety |
+|-----------|----------------|------------------|---------------|
+| `Put()` | O(1)* | O(1) | ✅ Lock-free |
+| `Get()` | O(1) | O(1) | ✅ Lock-free |
+| `Contains()` | O(n) | O(1) | ✅ Snapshot-safe |
+| Enumeration | O(n) | O(1) | ✅ Snapshot-safe |
 
-*O(n) for `GrowingRingBuffer<T>` when expansion occurs
+*O(n) for `GrowingRingBuffer<T>` when expansion occurs (thread-safe with locks)
+
+### 🚀 Performance Improvements
+
+The thread-safe implementation shows significant performance improvements:
+- **Mixed Operations**: 38% faster than previous versions
+- **Get Operations**: 4% faster with atomic optimizations  
+- **Put Operations**: 2% faster despite thread safety
+- **Enumeration**: 4% faster with snapshot-based iteration
+
+See [PERFORMANCE_REPORT.md](PERFORMANCE_REPORT.md) for detailed benchmarks.
 
 ## 🔧 Advanced Usage
 
@@ -187,20 +198,70 @@ logBuffer.Put(new LogEntry
 
 ### Thread-Safe Operations
 
-While individual operations are atomic, for complex operations you may need synchronization:
+The ring buffer is thread-safe for single producer/single consumer scenarios without requiring external synchronization:
 
 ```csharp
-private readonly object _lock = new object();
-private readonly RingBuffer<int> _buffer = new RingBuffer<int>(100);
+using System.Threading.Tasks;
 
-public void SafeAddRange(IEnumerable<int> items)
+var buffer = new RingBuffer<int>(100);
+
+// Producer thread - safe to run concurrently
+Task.Run(() => 
 {
-    lock (_lock)
+    for (int i = 0; i < 1000; i++)
     {
-        foreach (var item in items)
+        buffer.Put(i);
+    }
+});
+
+// Consumer thread - safe to run concurrently  
+Task.Run(() =>
+{
+    while (buffer.Size > 0 || /* production not done */)
+    {
+        try 
         {
-            _buffer.Put(item);
+            int value = buffer.Get();
+            ProcessValue(value);
         }
+        catch (InvalidOperationException)
+        {
+            // Buffer empty, continue or wait
+        }
+    }
+});
+```
+
+For complex multi-producer/multi-consumer scenarios, additional coordination may be needed:
+
+```csharp
+// Multiple producers/consumers with coordination
+private readonly RingBuffer<int> _buffer = new RingBuffer<int>(100);
+private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0);
+
+public async Task ProducerAsync(int item)
+{
+    try 
+    {
+        _buffer.Put(item);
+        _semaphore.Release(); // Signal consumer
+    }
+    catch (InvalidOperationException)
+    {
+        // Handle full buffer
+    }
+}
+
+public async Task<int?> ConsumerAsync()
+{
+    await _semaphore.WaitAsync(); // Wait for items
+    try 
+    {
+        return _buffer.Get();
+    }
+    catch (InvalidOperationException)
+    {
+        return null; // Buffer empty
     }
 }
 ```

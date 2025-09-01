@@ -66,16 +66,16 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
 
         int currentHead = head;
         T? item = buffer[currentHead];
-        
+
         // Clear the buffer slot to prevent memory leaks
         buffer[currentHead] = default;
-        
+
         int newHead = (currentHead + 1) % Capacity;
         Thread.MemoryBarrier(); // Ensure buffer write is visible before updating head
         head = newHead;
-        
+
         Interlocked.Decrement(ref size);
-        
+
         return item!;
     }
 
@@ -92,7 +92,7 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
 
         // Check if buffer is full
         bool isFull = (currentTail == currentHead && currentSize != 0);
-        
+
         if (isFull)
         {
             if (allowOverflow)
@@ -114,13 +114,13 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
     {
         // Write the item first
         buffer[currentTail] = toAdd;
-        
+
         // Ensure the write is visible before updating tail
         Thread.MemoryBarrier();
-        
+
         int newTail = (currentTail + 1) % Capacity;
         tail = newTail;
-        
+
         Interlocked.Increment(ref size);
     }
 
@@ -128,20 +128,20 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
     {
         // Clear the head slot before overwriting
         buffer[currentHead] = default;
-        
+
         // Move head forward
         int newHead = (currentHead + 1) % Capacity;
         head = newHead;
-        
+
         // Write the new item
         buffer[currentTail] = toAdd;
-        
+
         // Ensure writes are visible before updating tail
         Thread.MemoryBarrier();
-        
+
         int newTail = (currentTail + 1) % Capacity;
         tail = newTail;
-        
+
         // Size remains the same since we overwrote
     }
 
@@ -154,8 +154,10 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
     public RingBuffer(int capacity, bool overflow)
     {
         if (capacity <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(capacity), "Capacity must be greater than zero");
-            
+        }
+
         buffer = new T?[capacity];
         allowOverflow = overflow;
     }
@@ -168,7 +170,7 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
         var snapshot = new List<T>(Size);
         int currentHead = head;
         int currentSize = size;
-        
+
         for (int i = 0; i < currentSize; i++)
         {
             int index = (currentHead + i) % Capacity;
@@ -178,7 +180,7 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
                 snapshot.Add(item!);
             }
         }
-        
+
         return snapshot.GetEnumerator();
     }
 
@@ -206,12 +208,12 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
         var comparer = EqualityComparer<T>.Default;
         int currentHead = head;
         int currentSize = size;
-        
+
         for (int i = 0; i < currentSize; i++)
         {
             int index = (currentHead + i) % Capacity;
             T? bufferItem = buffer[index];
-            
+
             if (comparer.Equals(item, bufferItem))
             {
                 return true;
@@ -231,7 +233,7 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
         {
             buffer[i] = default;
         }
-        
+
         // Reset pointers atomically
         head = 0;
         tail = 0;
@@ -249,15 +251,24 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
     /// where the buffer should begin copying to.</param>
     public void CopyTo(T[] array, int arrayIndex)
     {
-        if (array == null) throw new ArgumentNullException(nameof(array));
-        if (arrayIndex < 0) throw new ArgumentOutOfRangeException(nameof(arrayIndex));
-        
+        if (array == null)
+        {
+            throw new ArgumentNullException(nameof(array));
+        }
+
+        if (arrayIndex < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+        }
+
         int currentHead = head;
         int currentSize = size;
-        
+
         if (array.Length - arrayIndex < currentSize)
+        {
             throw new ArgumentException("Destination array is not large enough");
-            
+        }
+
         for (int i = 0; i < currentSize; i++)
         {
             int index = (currentHead + i) % Capacity;
@@ -279,7 +290,7 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
         var comparer = EqualityComparer<T>.Default;
         int currentHead = head;
         int currentSize = size;
-        
+
         // Find the item
         int removeIndex = -1;
         for (int i = 0; i < currentSize; i++)
@@ -291,37 +302,41 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
                 break;
             }
         }
-        
+
         if (removeIndex == -1)
+        {
             return false;
+        }
 
         // Shift elements to fill the gap - this is expensive but maintains order
         int itemsToMove = currentSize - 1;
         bool foundGap = false;
-        
+
         for (int i = 0; i < itemsToMove; i++)
         {
             int currentIndex = (currentHead + i) % Capacity;
             int nextIndex = (currentHead + i + 1) % Capacity;
-            
+
             if (currentIndex == removeIndex)
+            {
                 foundGap = true;
-                
+            }
+
             if (foundGap)
             {
                 buffer[currentIndex] = buffer[nextIndex];
             }
         }
-        
+
         // Clear the last position and update tail
         int lastIndex = (tail - 1 + Capacity) % Capacity;
         buffer[lastIndex] = default;
-        
+
         int newTail = (tail - 1 + Capacity) % Capacity;
         tail = newTail;
-        
+
         Interlocked.Decrement(ref size);
-        
+
         return true;
     }
     #endregion

@@ -9,17 +9,17 @@ AMD EPYC 7763, 1 CPU, 4 logical and 2 physical cores
 IterationCount=5  WarmupCount=3  
 
 ```
-| Method                            | Mean      | Error     | StdDev    | Ratio | RatioSD | Gen0    | Allocated | Alloc Ratio |
-|---------------------------------- |----------:|----------:|----------:|------:|--------:|--------:|----------:|------------:|
-| RingBuffer_Foreach                | 10.721 μs | 0.1555 μs | 0.0241 μs |  1.61 |    0.00 |       - |      40 B |          NA |
-| GrowingRingBuffer_Foreach         | 10.716 μs | 0.0211 μs | 0.0033 μs |  1.61 |    0.00 |       - |      40 B |          NA |
-| RingBuffer_Get                    | 12.989 μs | 0.0066 μs | 0.0017 μs |  1.95 |    0.00 |       - |         - |          NA |
-| GrowingRingBuffer_Get             | 12.776 μs | 0.0266 μs | 0.0041 μs |  1.92 |    0.00 |       - |         - |          NA |
-| Queue_Dequeue                     |  3.576 μs | 0.0048 μs | 0.0012 μs |  0.54 |    0.00 |       - |         - |          NA |
-| GrowingRingBuffer_WithExpansion   | 60.127 μs | 7.5808 μs | 1.9687 μs |  9.03 |    0.27 | 12.2070 |  204400 B |          NA |
-| RingBuffer_MixedOperations        | 20.318 μs | 0.0373 μs | 0.0097 μs |  3.05 |    0.00 |       - |         - |          NA |
-| GrowingRingBuffer_MixedOperations | 20.018 μs | 0.0094 μs | 0.0024 μs |  3.00 |    0.00 |       - |         - |          NA |
-| RingBuffer_Overflow               |  6.396 μs | 0.0041 μs | 0.0006 μs |  0.96 |    0.00 |       - |         - |          NA |
-| RingBuffer_Put                    |  6.662 μs | 0.0116 μs | 0.0030 μs |  1.00 |    0.00 |       - |         - |          NA |
-| GrowingRingBuffer_Put             |  6.664 μs | 0.0135 μs | 0.0035 μs |  1.00 |    0.00 |       - |         - |          NA |
-| Queue_Enqueue                     |  1.998 μs | 0.0110 μs | 0.0029 μs |  0.30 |    0.00 |       - |         - |          NA |
+| Method                            | Mean       | Error     | StdDev    | Ratio | RatioSD | Gen0    | Gen1   | Allocated | Alloc Ratio |
+|---------------------------------- |-----------:|----------:|----------:|------:|--------:|--------:|-------:|----------:|------------:|
+| RingBuffer_Foreach                |  10.233 μs | 0.1116 μs | 0.0290 μs |  1.56 |    0.00 |  0.2441 |      - |    4096 B |          NA |
+| GrowingRingBuffer_Foreach         |  10.201 μs | 0.0892 μs | 0.0232 μs |  1.56 |    0.00 |  0.2441 |      - |    4096 B |          NA |
+| RingBuffer_Get                    |  12.452 μs | 0.0498 μs | 0.0077 μs |  1.90 |    0.00 |       - |      - |         - |          NA |
+| GrowingRingBuffer_Get             |  12.458 μs | 0.0275 μs | 0.0071 μs |  1.90 |    0.00 |       - |      - |         - |          NA |
+| Queue_Dequeue                     |   3.581 μs | 0.0140 μs | 0.0036 μs |  0.55 |    0.00 |       - |      - |         - |          NA |
+| GrowingRingBuffer_WithExpansion   | 141.696 μs | 8.4932 μs | 2.2057 μs | 21.62 |    0.31 | 12.2070 | 0.2441 |  204480 B |          NA |
+| RingBuffer_MixedOperations        |  12.529 μs | 0.0536 μs | 0.0139 μs |  1.91 |    0.00 |       - |      - |         - |          NA |
+| GrowingRingBuffer_MixedOperations |  12.041 μs | 0.0246 μs | 0.0038 μs |  1.84 |    0.00 |       - |      - |         - |          NA |
+| RingBuffer_Overflow               |   6.250 μs | 0.0131 μs | 0.0020 μs |  0.95 |    0.00 |       - |      - |         - |          NA |
+| RingBuffer_Put                    |   6.555 μs | 0.0141 μs | 0.0036 μs |  1.00 |    0.00 |       - |      - |         - |          NA |
+| GrowingRingBuffer_Put             |   6.561 μs | 0.0232 μs | 0.0036 μs |  1.00 |    0.00 |       - |      - |         - |          NA |
+| Queue_Enqueue                     |   1.984 μs | 0.0028 μs | 0.0007 μs |  0.30 |    0.00 |       - |      - |         - |          NA |

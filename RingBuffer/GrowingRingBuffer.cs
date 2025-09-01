@@ -48,7 +48,7 @@ public class GrowingRingBuffer<T> : RingBuffer<T>
 
         // Check if buffer is full
         bool isFull = (currentTail == currentHead && currentSize != 0);
-        
+
         if (isFull)
         {
             ExpandAndAdd(item);
@@ -68,35 +68,35 @@ public class GrowingRingBuffer<T> : RingBuffer<T>
             int currentHead = head;
             int currentSize = size;
             bool stillFull = (currentTail == currentHead && currentSize != 0);
-            
+
             if (stillFull)
             {
                 // Expand the buffer
                 var newCapacity = buffer.Length + originalCapacity;
                 var newBuffer = new T?[newCapacity];
-                
+
                 // Copy existing items to new buffer starting at index 0
                 for (int i = 0; i < currentSize; i++)
                 {
                     int sourceIndex = (currentHead + i) % buffer.Length;
                     newBuffer[i] = buffer[sourceIndex];
                 }
-                
+
                 // Clear old buffer to prevent memory leaks
                 for (int i = 0; i < buffer.Length; i++)
                 {
                     buffer[i] = default;
                 }
-                
+
                 // Replace the buffer
                 buffer = newBuffer;
-                
+
                 head = 0;
                 tail = currentSize;
-                
+
                 Thread.MemoryBarrier(); // Ensure all updates are visible
             }
-            
+
             // Add the item using the base class method
             base.Put(item);
         }
@@ -110,8 +110,10 @@ public class GrowingRingBuffer<T> : RingBuffer<T>
         : base(startCapacity)
     {
         if (startCapacity <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(startCapacity), "Start capacity must be greater than zero");
-            
+        }
+
         originalCapacity = startCapacity;
     }
     #endregion
