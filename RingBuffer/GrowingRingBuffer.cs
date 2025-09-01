@@ -21,12 +21,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace RingBuffer {
+namespace RingBuffer
+{
     /// <summary>
     /// A generic ring buffer. Grows when capacity is reached.
     /// </summary>
     /// <typeparam name="T">The type of data stored in the buffer</typeparam>
-    public class GrowingRingBuffer<T> : RingBuffer<T> {
+    public class GrowingRingBuffer<T> : RingBuffer<T>
+    {
 
         private int originalCapacity;
 
@@ -34,13 +36,16 @@ namespace RingBuffer {
         /// Adds an item to the end of the buffer.
         /// </summary>
         /// <param name="item">The item to be added.</param>
-        public new void Put(T item) {
+        public new void Put(T item)
+        {
             // If tail & head are equal and the buffer is not empty, assume
             // that it would overflow and expand the capacity before adding the
             // item.
-            if(tail == head && size != 0) {
+            if (tail == head && size != 0)
+            {
                 T[] _newArray = new T[buffer.Length + originalCapacity];
-                for(int i = 0; i < Capacity; i++) {
+                for (int i = 0; i < Capacity; i++)
+                {
                     _newArray[i] = buffer[i];
                 }
                 buffer = _newArray;
@@ -48,7 +53,8 @@ namespace RingBuffer {
                 addToBuffer(item, false);
             }
             // If the buffer would not overflow, just add the item.
-            else {
+            else
+            {
                 addToBuffer(item, false);
             }
         }
@@ -58,7 +64,8 @@ namespace RingBuffer {
         public GrowingRingBuffer() : this(4) { }
         // Capture the starting capacity, for future expansion.
         public GrowingRingBuffer(int startCapacity)
-            : base(startCapacity) {
+            : base(startCapacity)
+        {
             originalCapacity = startCapacity;
         }
         #endregion
