@@ -87,10 +87,10 @@ namespace RingBufferTests {
         /// Ensures that an exception is thrown when Get() is called on an
         /// empty buffer.
         /// </summary>
-        [TestMethod(), ExpectedException(typeof(InvalidOperationException))]
+        [TestMethod()]
         public void ThrowsError_GetEmpty() {
             RingBuffer<byte> buffer = new RingBuffer<byte>();
-            byte _tmp = buffer.Get();
+            Assert.ThrowsException<InvalidOperationException>(() => buffer.Get());
         }
 
         /// <summary>
