@@ -56,7 +56,11 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
     /// <returns>The oldest item added to the buffer.</returns>
     public T Get()
     {
-        if (size == 0) throw new System.InvalidOperationException("Buffer is empty.");
+        if (size == 0)
+        {
+            throw new System.InvalidOperationException("Buffer is empty.");
+        }
+
         T? item = buffer[head];
         buffer[head] = default;
         head = (head + 1) % Capacity;
@@ -152,7 +156,10 @@ public class RingBuffer<T> : IEnumerable<T>, IEnumerable, ICollection<T>,
         int index = head;
         for (int i = 0; i < size; i++, index = (index + 1) % Capacity)
         {
-            if (comparer.Equals(item, buffer[index])) return true;
+            if (comparer.Equals(item, buffer[index]))
+            {
+                return true;
+            }
         }
         return false;
     }
