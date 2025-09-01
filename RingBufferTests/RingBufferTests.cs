@@ -18,6 +18,7 @@
  */
 #endregion
 using System;
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using RingBuffer;
 
@@ -181,6 +182,307 @@ public class RingBufferTests
         Assert.AreEqual(preRemoveSize - 1, buffer.Count);
 
     }
+
+    #region Edge Case Tests
+
+    /// <summary>
+    /// Tests behavior with single capacity buffer
+    /// </summary>
+    [TestMethod]
+    public void SingleCapacityBuffer_WorksCorrectly()
+    {
+        var buffer = new RingBuffer<int>(1);
+        Assert.AreEqual(1, buffer.Capacity);
+        Assert.AreEqual(0, buffer.Size);
+
+        buffer.Add(42);
+        Assert.AreEqual(1, buffer.Size);
+        Assert.AreEqual(42, buffer.Get());
+        Assert.AreEqual(0, buffer.Size);
+    }
+
+    /// <summary>
+    /// Tests overflow behavior when AllowOverflow is true
+    /// </summary>
+    [TestMethod]
+    public void OverflowAllowed_OverwritesOldestItem()
+    {
+        var buffer = new RingBuffer<int>(3, true);
+        
+        // Fill buffer
+        buffer.Add(1);
+        buffer.Add(2);
+        buffer.Add(3);
+        Assert.AreEqual(3, buffer.Size);
+
+        // Add one more - should overwrite oldest (1)
+        buffer.Add(4);
+        Assert.AreEqual(3, buffer.Size); // Size stays same with overflow
+
+        // Should get 2, 3, 4 (1 was overwritten)
+        Assert.AreEqual(2, buffer.Get());
+        Assert.AreEqual(3, buffer.Get());
+        Assert.AreEqual(4, buffer.Get());
+    }
+
+    /// <summary>
+    /// Tests that overflow throws exception when AllowOverflow is false
+    /// </summary>
+    [TestMethod]
+    public void OverflowNotAllowed_ThrowsException()
+    {
+        var buffer = new RingBuffer<int>(2, false);
+        
+        buffer.Add(1);
+        buffer.Add(2);
+        
+        Assert.ThrowsException<InvalidOperationException>(() => buffer.Add(3));
+    }
+
+    /// <summary>
+    /// Tests constructor variations
+    /// </summary>
+    [TestMethod]
+    public void Constructors_WorkCorrectly()
+    {
+        // Default constructor
+        var buffer1 = new RingBuffer<int>();
+        Assert.AreEqual(4, buffer1.Capacity);
+        Assert.IsFalse(buffer1.AllowOverflow);
+
+        // Capacity only constructor
+        var buffer2 = new RingBuffer<int>(10);
+        Assert.AreEqual(10, buffer2.Capacity);
+        Assert.IsFalse(buffer2.AllowOverflow);
+
+        // Full constructor
+        var buffer3 = new RingBuffer<int>(5, true);
+        Assert.AreEqual(5, buffer3.Capacity);
+        Assert.IsTrue(buffer3.AllowOverflow);
+    }
+
+    /// <summary>
+    /// Tests buffer with different data types
+    /// </summary>
+    [TestMethod]
+    public void DifferentDataTypes_WorkCorrectly()
+    {
+        // String buffer
+        var stringBuffer = new RingBuffer<string>(3);
+        stringBuffer.Add("first");
+        stringBuffer.Add("second");
+        stringBuffer.Add("third");
+        
+        Assert.AreEqual("first", stringBuffer.Get());
+        Assert.AreEqual("second", stringBuffer.Get());
+        Assert.AreEqual("third", stringBuffer.Get());
+
+        // Double buffer
+        var doubleBuffer = new RingBuffer<double>(2);
+        doubleBuffer.Add(3.14);
+        doubleBuffer.Add(2.71);
+        
+        Assert.AreEqual(3.14, doubleBuffer.Get());
+        Assert.AreEqual(2.71, doubleBuffer.Get());
+    }
+
+    /// <summary>
+    /// Tests null values in buffer
+    /// </summary>
+    [TestMethod]
+    public void NullValues_HandledCorrectly()
+    {
+        var buffer = new RingBuffer<string?>(3);
+        
+        buffer.Add("test");
+        buffer.Add(null);
+        buffer.Add("another");
+
+        // Test Contains before removing items
+        Assert.IsTrue(buffer.Contains(null));
+        Assert.IsTrue(buffer.Contains("test"));
+        Assert.IsTrue(buffer.Contains("another"));
+
+        Assert.AreEqual("test", buffer.Get());
+        Assert.IsNull(buffer.Get());
+        Assert.AreEqual("another", buffer.Get());
+    }
+
+    /// <summary>
+    /// Tests large capacity buffer
+    /// </summary>
+    [TestMethod]
+    public void LargeCapacity_WorksCorrectly()
+    {
+        var buffer = new RingBuffer<int>(10000);
+        Assert.AreEqual(10000, buffer.Capacity);
+        
+        // Add many items
+        for (int i = 0; i < 5000; i++)
+        {
+            buffer.Add(i);
+        }
+        
+        Assert.AreEqual(5000, buffer.Size);
+        
+        // Verify order
+        for (int i = 0; i < 5000; i++)
+        {
+            Assert.AreEqual(i, buffer.Get());
+        }
+    }
+
+    /// <summary>
+    /// Tests enumeration on partially filled buffer
+    /// </summary>
+    [TestMethod]
+    public void PartiallyFilledBuffer_EnumeratesCorrectly()
+    {
+        var buffer = new RingBuffer<int>(10);
+        
+        // Only add 5 items
+        for (int i = 0; i < 5; i++)
+        {
+            buffer.Add(i);
+        }
+
+        var enumeratedItems = new List<int>();
+        foreach (int item in buffer)
+        {
+            enumeratedItems.Add(item);
+        }
+
+        Assert.AreEqual(5, enumeratedItems.Count);
+        for (int i = 0; i < 5; i++)
+        {
+            Assert.AreEqual(i, enumeratedItems[i]);
+        }
+    }
+
+    /// <summary>
+    /// Tests circular behavior after wrapping
+    /// </summary>
+    [TestMethod]
+    public void CircularBehavior_WorksAfterWrapping()
+    {
+        var buffer = new RingBuffer<int>(3, true); // Allow overflow
+        
+        // Add more items than capacity to test wrapping
+        for (int i = 0; i < 10; i++)
+        {
+            buffer.Add(i);
+        }
+
+        // Should contain last 3 items: 7, 8, 9
+        Assert.AreEqual(7, buffer.Get());
+        Assert.AreEqual(8, buffer.Get());
+        Assert.AreEqual(9, buffer.Get());
+    }
+
+    /// <summary>
+    /// Tests mixed operations (add/remove)
+    /// </summary>
+    [TestMethod]
+    public void MixedOperations_WorkCorrectly()
+    {
+        var buffer = new RingBuffer<int>(5);
+        
+        // Add some items
+        buffer.Add(1);
+        buffer.Add(2);
+        buffer.Add(3);
+        
+        // Remove one
+        Assert.AreEqual(1, buffer.Get());
+        
+        // Add more
+        buffer.Add(4);
+        buffer.Add(5);
+        
+        // Check remaining order
+        Assert.AreEqual(2, buffer.Get());
+        Assert.AreEqual(3, buffer.Get());
+        Assert.AreEqual(4, buffer.Get());
+        Assert.AreEqual(5, buffer.Get());
+    }
+
+    /// <summary>
+    /// Tests Count property consistency with Size
+    /// </summary>
+    [TestMethod]
+    public void Count_ConsistentWithSize()
+    {
+        var buffer = new RingBuffer<int>(5);
+        
+        Assert.AreEqual(buffer.Size, buffer.Count);
+        
+        buffer.Add(1);
+        Assert.AreEqual(buffer.Size, buffer.Count);
+        Assert.AreEqual(1, buffer.Count);
+        
+        buffer.Add(2);
+        buffer.Add(3);
+        Assert.AreEqual(buffer.Size, buffer.Count);
+        Assert.AreEqual(3, buffer.Count);
+        
+        buffer.Get();
+        Assert.AreEqual(buffer.Size, buffer.Count);
+        Assert.AreEqual(2, buffer.Count);
+    }
+
+    /// <summary>
+    /// Tests IsReadOnly property
+    /// </summary>
+    [TestMethod]
+    public void IsReadOnly_ReturnsFalse()
+    {
+        var buffer = new RingBuffer<int>();
+        Assert.IsFalse(buffer.IsReadOnly);
+    }
+
+    /// <summary>
+    /// Tests SyncRoot property
+    /// </summary>
+    [TestMethod]
+    public void SyncRoot_ReturnsBuffer()
+    {
+        var buffer = new RingBuffer<int>();
+        Assert.AreEqual(buffer, buffer.SyncRoot);
+    }
+
+    /// <summary>
+    /// Tests IsSynchronized property
+    /// </summary>
+    [TestMethod]
+    public void IsSynchronized_ReturnsFalse()
+    {
+        var buffer = new RingBuffer<int>();
+        Assert.IsFalse(buffer.IsSynchronized);
+    }
+
+    /// <summary>
+    /// Tests non-generic ICollection.CopyTo
+    /// </summary>
+    [TestMethod]
+    public void NonGenericCopyTo_WorksCorrectly()
+    {
+        var buffer = new RingBuffer<int>(5);
+        buffer.Add(1);
+        buffer.Add(2);
+        buffer.Add(3);
+
+        var array = new int[6];
+        ((System.Collections.ICollection)buffer).CopyTo(array, 2);
+
+        Assert.AreEqual(0, array[0]);
+        Assert.AreEqual(0, array[1]);
+        Assert.AreEqual(1, array[2]);
+        Assert.AreEqual(2, array[3]);
+        Assert.AreEqual(3, array[4]);
+        Assert.AreEqual(0, array[5]);
+    }
+
+    #endregion
 
     private void PopulateBuffer(int elements, RingBuffer<int> buffer)
     {
